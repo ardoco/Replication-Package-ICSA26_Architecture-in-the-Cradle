@@ -1,4 +1,6 @@
-# ArchGuard
+# Replication Package for "Architecture in the Cradle: Early Warning of Architectural Decay with ArchGuard"
+
+by Haoyu Liu, Dominik Fuchß, Sophie Corallo, Maximilian Hummel, Jan Keim, and Tobias Hey
 
 Welcome to the ArchGuard replication package!
 This framework analyzes software issue reports to find those that are inducing architectural smells.
