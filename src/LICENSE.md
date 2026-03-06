@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Haoyu Liu, Dominik.Fuchss, Sophie Corallo, Maximilian Hummel, Jan Keim, Tobias Hey
+Copyright (c) 2026 Haoyu Liu, Dominik Fuchß, Sophie Corallo, Maximilian Hummel, Jan Keim, Tobias Hey
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
