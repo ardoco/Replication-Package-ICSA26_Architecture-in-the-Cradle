@@ -19,18 +19,19 @@ The approach and evaluation are detailed in our paper:
 
 ### 1. Clone the Repository
 
-You can download from figshare link https://doi.org/10.6084/m9.figshare.30833303   
+You can download from [zenodo](https://doi.org/10.5281/zenodo.18891082) or [figshare](https://doi.org/10.6084/m9.figshare.30833303) 
+
 
 Or clone from Github
 
 ```bash
-git clone https://github.com/ardoco/archGuard-rep
-cd archGuard-rep
+git clone https://github.com/ardoco/Replication-Package-ICSA26_Architecture-in-the-Cradle
+cd Replication-Package-ICSA26_Architecture-in-the-Cradle
 ```
 
 ### 2. Prepare Data
 
-Download `data-output.zip` from the Figshare link above and extract it into the project root:
+Download `data-output.zip` from the Zenodo, Figshare link above, or github releases and extract it into the project root:
 
 ```bash
 unzip data-output.zip -d data-output
@@ -162,6 +163,10 @@ ArchGuard has been evaluated on three open-source systems using two architectura
 | StackGres | ARCAN |
 
 Classification performance is assessed using single split train-test or repeated stratified k-fold cross-validation (2 repeats x 5 folds) with Wilcoxon signed-rank tests against random baselines.
+
+## Acknowledgments
+
+This work was funded by the Topic Engineering Secure Systems of the Helmholtz Association (HGF) and by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) under the National Research Data Infrastructure -- NFDI 52/1 -- project number 501930651, NFDIxCS and under - SFB 1608 - 501798263. It was also supported by funding from the pilot program Core Informatics at KIT (KiKIT) of the Helmholtz Association (HGF) and by KASTEL Security Research Labs.
 
 ## License
 
