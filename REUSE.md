@@ -80,6 +80,39 @@ You need three types of batch JSON files extracted from your GitLab project. Pla
 
 #### 2a. Issue batch files (`issues_all_issues_batch_*.json`)
 
+For a GitHub project, an optional read-only exporter translates **explicit closing
+issue links** from selected merged PRs into this same schema:
+
+```bash
+gh auth status
+python -m src.integrations.github_export --repo owner/repository \
+  --pull-requests 26 42 \
+  --output ../archguard-input/myproject/issues_all_issues_batch_1.json
+```
+
+It needs only Python and the authenticated `gh` CLI. It preserves merge dates,
+commit author dates, renamed/deleted file paths, and GitHub provenance. It fetches
+paginated commit/file responses and rejects potentially truncated lists.
+The batch records the number of skipped cross-repository links and the numbers of
+PRs without a local closing issue.
+
+Use a trusted output directory outside the checkout for private data. The exporter
+creates a new owner-only file on POSIX and refuses to overwrite an existing path.
+The output filesystem needs to support hard links. The optional zero-shot classifier
+sends issue text to the OpenAI API and stores prompts in its local cache.
+
+The exporter produces the issue batch described here. For classification, supply
+the separate `issues_all_diffs_batch_*.json` files described in Step 2c and use
+`--issue-dir ../archguard-input/myproject` in Step 5 for the example above.
+Release registration, source versions, dependency facts, and smell evolution are
+also required for a new project. Discussion data remains optional.
+
+Offline contract checks:
+
+```bash
+python -m unittest discover -s tests -p test_github_export.py -v
+```
+
 Each file contains an array of issues with their metadata and related merge requests:
 
 ```json
