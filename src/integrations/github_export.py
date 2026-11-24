@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
@@ -162,7 +164,7 @@ def export(repo: str, pull_numbers: list[int], api: GitHubAPI) -> dict[str, obje
     repo = valid_repo(repo)
     issues: dict[int, dict[str, object]] = {}
     relations: dict[int, list[dict[str, object]]] = {}
-    skipped: list[dict[str, object]] = []
+    skipped_cross_repository_links = 0
     unlinked: list[int] = []
     for pull_number in sorted(set(pull_numbers)):
         number(pull_number)
@@ -173,13 +175,7 @@ def export(repo: str, pull_numbers: list[int], api: GitHubAPI) -> dict[str, obje
         for issue in linked_issues(api.closing_links(repo, pull_number)):
             issue_repo = string(obj(issue["repository"])["nameWithOwner"])
             if issue_repo.lower() != repo.lower():
-                skipped.append(
-                    {
-                        "repo": issue_repo,
-                        "issue": number(issue["number"]),
-                        "pull_request": pull_number,
-                    }
-                )
+                skipped_cross_repository_links += 1
             else:
                 own_links.append(issue)
         if not own_links:
@@ -240,13 +236,24 @@ def export(repo: str, pull_numbers: list[int], api: GitHubAPI) -> dict[str, obje
             "total_issues": len(records),
             "pull_requests": sorted(set(pull_numbers)),
             "unlinked_pulls": unlinked,
-            "skipped_cross_repository_links": skipped,
+            "skipped_cross_repository_link_count": skipped_cross_repository_links,
             "exported_at": datetime.now(timezone.utc).isoformat(),
             "relation_policy": "GitHub closingIssuesReferences only; no text inference",
             "discussion_policy": "not collected",
             "smell_labels": "not generated",
         },
     }
+
+
+def write_batch(output: Path, batch: dict[str, object]) -> None:
+    output.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".github-export-", dir=output.parent) as staging_dir:
+        fd, staged_path = tempfile.mkstemp(dir=staging_dir)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump(batch, stream, ensure_ascii=False, indent=2)
+            stream.write("\n")
+        # Publish the complete file without replacing or following an existing destination.
+        os.link(staged_path, output)
 
 
 def main() -> None:
@@ -259,17 +266,15 @@ def main() -> None:
         parser.error("Export at most 20 explicit PRs per invocation")
     try:
         result = export(args.repo, args.pull_requests, GhCLI())
+        write_batch(args.output, result)
     except (
         ValueError,
         KeyError,
+        OSError,
         subprocess.CalledProcessError,
         subprocess.TimeoutExpired,
     ) as error:
         parser.exit(1, f"Export failed: {error}\n")
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
 
 
 if __name__ == "__main__":

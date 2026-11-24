@@ -1,6 +1,11 @@
+import json
+import os
+import stat
+import tempfile
 import unittest
+from pathlib import Path
 
-from src.integrations.github_export import export
+from src.integrations.github_export import export, write_batch
 
 SHA = "a" * 40
 
@@ -92,7 +97,8 @@ class ExportTests(unittest.TestCase):
     def test_cross_repository_iids_are_not_conflated(self) -> None:
         result = export("owner/repo", [26], FakeAPI(cross_repo=True))
         self.assertEqual(result["issues"], [])
-        self.assertEqual(len(result["metadata"]["skipped_cross_repository_links"]), 1)
+        self.assertEqual(result["metadata"]["skipped_cross_repository_link_count"], 1)
+        self.assertNotIn("other/repo", json.dumps(result))
 
     def test_does_not_infer_links_from_titles_or_bodies(self) -> None:
         result = export("owner/repo", [26], FakeAPI(linked=False))
@@ -110,6 +116,33 @@ class ExportTests(unittest.TestCase):
     def test_validates_repo_before_api_use(self) -> None:
         with self.assertRaisesRegex(ValueError, "owner/name"):
             export("../invalid", [26], FakeAPI())
+
+
+class BatchWriteTests(unittest.TestCase):
+    def test_writes_a_complete_batch_with_private_permissions(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "input" / "issues.json"
+            write_batch(output, {"issues": ["Example"]})
+            batch = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(batch, {"issues": ["Example"]})
+            if os.name == "posix":
+                self.assertEqual(stat.S_IMODE(output.stat().st_mode) & 0o077, 0)
+
+    def test_preserves_an_existing_batch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "issues.json"
+            output.write_text("original", encoding="utf-8")
+            with self.assertRaises(FileExistsError):
+                write_batch(output, {"issues": []})
+            self.assertEqual(output.read_text(encoding="utf-8"), "original")
+            self.assertEqual(list(output.parent.iterdir()), [output])
+
+    def test_failed_serialization_leaves_no_batch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "issues.json"
+            with self.assertRaises(TypeError):
+                write_batch(output, {"issues": [object()]})
+            self.assertEqual(list(output.parent.iterdir()), [])
 
 
 if __name__ == "__main__":
